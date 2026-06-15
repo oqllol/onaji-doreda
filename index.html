@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<!-- GA: 測定ID取得後にここへ noga除外＋gtag スニペットを挿入する -->
+<title>おなじの どれだ ｜ エンド工作室</title>
+<meta name="description" content="うらむきの カードを めくって、おなじ えの ペアを さがそう。3〜5さいの ための、きおくと しゅうちゅうの あそび。">
+<meta name="theme-color" content="#cdeafb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#fff6e2; --sky:#cdeafb; --card:#fff; --ink:#4a3b28; --ink-soft:#93836c;
+    --coral:#ff6b6b; --coral-d:#e84f4f; --yellow:#ffd93d; --yellow-d:#f5a623;
+    --blue:#4dabf7; --green:#51c96f; --grape:#b07be0;
+    --maru:"Zen Maru Gothic", system-ui, sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    margin:0; font-family:var(--maru); color:var(--ink);
+    background:linear-gradient(180deg, var(--sky) 0%, #ffeede 40%, var(--cream) 100%);
+    background-attachment:fixed; overflow:hidden;
+    -webkit-font-smoothing:antialiased; user-select:none; -webkit-user-select:none;
+    touch-action:manipulation;
+  }
+  /* ふわふわ雲（シリーズ共通の世界観） */
+  .sky-deco{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  .cloud{ position:absolute; background:#fff; border-radius:50%; opacity:.7;
+    box-shadow:40px 8px 0 -4px #fff, 78px 0 0 -8px #fff, -34px 6px 0 -6px #fff; }
+  .c1{ width:60px; height:60px; top:7%;  left:-15%; animation:drift 50s linear infinite; }
+  .c2{ width:44px; height:44px; top:20%; left:-15%; animation:drift 70s linear infinite; animation-delay:-25s; opacity:.55; }
+  @keyframes drift{ to{ transform:translateX(135vw); } }
+
+  .app{ position:relative; z-index:1; height:100dvh; display:flex; flex-direction:column;
+    max-width:680px; margin:0 auto; padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom); }
+
+  /* ============ じょうぶ バー ============ */
+  .topbar{ display:flex; align-items:center; gap:10px; padding:12px 4px 6px; }
+  .home{ font-family:var(--maru); font-weight:900; font-size:14px; color:var(--ink);
+    background:#fff; border:none; border-radius:100px; padding:8px 15px; cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,.08); }
+  .home:active{ transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.08); }
+  .progress{ flex:1; height:16px; background:#fff; border-radius:100px; overflow:hidden;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.08); }
+  .progress > i{ display:block; height:100%; width:0%; border-radius:100px;
+    background:linear-gradient(90deg,var(--yellow),var(--yellow-d)); transition:width .5s cubic-bezier(.34,1.56,.5,1); }
+  .stars{ font-family:var(--maru); font-weight:900; font-size:15px; color:var(--yellow-d);
+    background:#fff; border-radius:100px; padding:6px 13px; box-shadow:0 4px 0 rgba(0,0,0,.06); white-space:nowrap; }
+
+  /* ============ といかけ ============ */
+  .ask{ text-align:center; padding:6px 0 2px; }
+  .ask h1{ font-family:var(--maru); font-weight:900; margin:0; line-height:1.3;
+    font-size:clamp(22px,6vw,32px); color:var(--ink); text-shadow:2px 2px 0 #fff; }
+  .ask .hint{ font-weight:700; font-size:13px; color:var(--ink-soft); margin:6px 0 0; }
+
+  /* ============ あそびば（カードが ならぶ ところ） ============ */
+  .stage{ flex:1; min-height:0; position:relative; margin:8px 0;
+    display:flex; align-items:center; justify-content:center; }
+  .board{ display:grid; gap:clamp(8px,2.6vw,16px); width:100%; max-width:560px;
+    margin:0 auto; place-content:center; }
+
+  /* カード */
+  .mcard{ position:relative; aspect-ratio:3/4; cursor:pointer;
+    perspective:600px; animation:plop .45s cubic-bezier(.34,1.7,.5,1) both; }
+  @keyframes plop{ from{ opacity:0; transform:scale(0) rotate(-20deg);} to{ opacity:1; transform:scale(1);} }
+  .mcard .inner{ position:absolute; inset:0; transition:transform .35s cubic-bezier(.34,1.4,.5,1);
+    transform-style:preserve-3d; }
+  .mcard.flipped .inner, .mcard.matched .inner{ transform:rotateY(180deg); }
+  .mcard .face{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    border-radius:18px; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    box-shadow:0 6px 0 rgba(0,0,0,.12), 0 12px 18px -8px rgba(0,0,0,.35); }
+  /* うら（？） */
+  .mcard .back{ background:linear-gradient(145deg,var(--blue),#2f8fd6); color:#fff;
+    font-weight:900; font-size:clamp(28px,9vw,46px); text-shadow:0 2px 0 rgba(0,0,0,.15); }
+  .mcard:nth-child(3n+2) .back{ background:linear-gradient(145deg,var(--coral),var(--coral-d)); }
+  .mcard:nth-child(3n+3) .back{ background:linear-gradient(145deg,var(--green),#38a754); }
+  /* おもて（えもじ） */
+  .mcard .front{ background:#fff; transform:rotateY(180deg);
+    font-size:clamp(34px,11vw,60px); line-height:1; }
+  .mcard.matched{ animation:matched .5s ease; }
+  .mcard.matched .front{ box-shadow:0 0 0 4px var(--yellow), 0 6px 0 rgba(0,0,0,.1); }
+  @keyframes matched{ 0%{transform:scale(1);} 45%{transform:scale(1.12) translateY(-6px);} 100%{transform:scale(1);} }
+  .mcard.locked{ pointer-events:none; }
+
+  /* ============ フィードバック ============ */
+  .flash{ position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center;
+    pointer-events:none; }
+  .flash.show{ display:flex; }
+  .flash .word{ font-family:var(--maru); font-weight:900; font-size:clamp(44px,15vw,90px);
+    color:var(--green); text-shadow:3px 3px 0 #fff, 6px 6px 0 rgba(0,0,0,.08);
+    animation:pop .6s cubic-bezier(.34,1.7,.5,1); }
+  @keyframes pop{ 0%{transform:scale(0) rotate(-12deg);} 60%{transform:scale(1.15) rotate(4deg);} 100%{transform:scale(1) rotate(0);} }
+
+  /* ============ かいし／ごほうび 画面 ============ */
+  .screen{ position:fixed; inset:0; z-index:30; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; padding:30px;
+    background:linear-gradient(180deg, var(--sky) 0%, #ffeede 45%, var(--cream) 100%); }
+  .screen.hide{ display:none; }
+  .screen .big{ font-family:var(--maru); font-weight:900; font-size:clamp(34px,9vw,56px); margin:0;
+    color:var(--coral); text-shadow:2px 2px 0 #fff; }
+  .screen .sub{ font-weight:700; color:var(--ink-soft); font-size:15px; margin:14px 0 0; max-width:24em; }
+  .bigmark{ font-size:clamp(80px,26vw,140px); line-height:1; animation:bob 2.6s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{transform:translateY(0) rotate(-4deg);} 50%{transform:translateY(-12px) rotate(4deg);} }
+  .start-btn{ margin-top:26px; font-family:var(--maru); font-weight:900; font-size:24px; color:#fff;
+    background:var(--coral); border:none; border-radius:100px; padding:18px 46px; cursor:pointer;
+    box-shadow:0 8px 0 var(--coral-d), 0 16px 24px -10px rgba(0,0,0,.4); }
+  .start-btn:active{ transform:translateY(4px); box-shadow:0 4px 0 var(--coral-d); }
+  .stickers{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; max-width:340px; margin:22px auto 0; }
+  .stickers span{ font-size:34px; animation:pop .5s cubic-bezier(.34,1.7,.5,1) both; }
+  .toggle-row{ margin-top:20px; display:flex; gap:8px; }
+  .toggle-row button{ font-family:var(--maru); font-weight:700; font-size:13px; color:var(--ink);
+    background:#fff; border:none; border-radius:100px; padding:9px 16px; cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,.06); }
+  .toggle-row button[aria-pressed="false"]{ opacity:.5; }
+
+  /* ============ レベルえらび ============ */
+  .levels{ display:flex; gap:clamp(10px,3vw,16px); flex-wrap:wrap; justify-content:center; margin-top:24px; }
+  .level-btn{ position:relative; font-family:var(--maru); font-weight:900; color:#fff;
+    width:clamp(90px,26vw,116px); border:none; border-radius:24px; cursor:pointer; padding:14px 8px 12px;
+    display:flex; flex-direction:column; align-items:center; gap:2px; transition:transform .12s; }
+  .level-btn:active{ transform:translateY(4px); }
+  .level-btn .lv-emoji{ font-size:clamp(34px,10vw,46px); line-height:1; }
+  .level-btn .lv-name{ font-size:15px; }
+  .level-btn .lv-range{ font-size:12px; font-weight:700; opacity:.92; }
+  .level-btn .lv-clear{ position:absolute; top:-12px; right:-8px; font-size:26px;
+    filter:drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+  .reward-btns{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:24px; }
+  .reward-btns .start-btn{ margin-top:0; font-size:20px; padding:15px 30px; }
+  .reward-btns .alt-btn{ background:#fff; color:var(--coral); box-shadow:0 6px 0 rgba(0,0,0,.1); }
+  .reward-btns .alt-btn:active{ box-shadow:0 3px 0 rgba(0,0,0,.1); }
+
+  /* こんふぇってぃ */
+  .confetti{ position:fixed; top:-10px; width:12px; height:16px; z-index:25; pointer-events:none; border-radius:2px; }
+  @keyframes fall{ to{ transform:translateY(108vh) rotate(540deg); opacity:.2; } }
+
+  @media (prefers-reduced-motion: reduce){
+    .mcard,.cloud,.bigmark,.flash .word{ animation:none !important; }
+    .mcard .inner{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="sky-deco"><div class="cloud c1"></div><div class="cloud c2"></div></div>
+
+<!-- ================= かいし がめん ================= -->
+<div class="screen" id="startScreen">
+  <div class="bigmark">🃏</div>
+  <h1 class="big">おなじの どれだ</h1>
+  <p class="sub">カードを めくって、おなじ えの ペアを さがそう！レベルを えらんでね。</p>
+  <div class="levels" id="levelButtons"></div>
+  <div class="toggle-row">
+    <button id="soundToggle" aria-pressed="true">🔊 おと あり</button>
+  </div>
+</div>
+
+<!-- ================= ごほうび がめん ================= -->
+<div class="screen hide" id="rewardScreen">
+  <div class="bigmark" id="rewardMark">🏆</div>
+  <h1 class="big">やったね！</h1>
+  <p class="sub" id="rewardSub">クリア！シールを ゲット！</p>
+  <div class="stickers" id="stickers"></div>
+  <div class="reward-btns" id="rewardBtns"></div>
+</div>
+
+<!-- ================= ゲーム ほんたい ================= -->
+<div class="app" id="game" style="display:none">
+  <div class="topbar">
+    <button class="home" id="homeBtn">🏠</button>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="stars" id="score">⭐ 0</div>
+  </div>
+
+  <div class="ask">
+    <h1 id="question">おなじ えを 2まい さがそう！</h1>
+    <p class="hint">カードを タップ して めくってね</p>
+  </div>
+
+  <div class="stage">
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<div class="flash" id="flash"><div class="word" id="flashWord">ぴったり！</div></div>
+
+<script>
+/* ============================================================
+   おなじの どれだ  —  3〜5さい / きおく（しんけいすいじゃく）
+   うらむきカードを めくって おなじ えの ペアを さがす。
+   ============================================================ */
+
+/* カードに つかう えもじ（いろいろミックス）*/
+const EMOJI_POOL = ["🐰","🐱","🐶","🐻","🐸","🦊","🐧","🐤","🍎","🍓","🍌","🍰","🍭","🚗","🚌","🚂","🚀","🌸","🌟","🌈","🍀"];
+const STICKERS    = ["🌟","🌈","🍓","🦄","🎈","🌸","🐞","🍭","⭐","🎀","🐠","🍀"];
+
+/* レベル: ペアの かずが だんだん ふえる */
+const LEVELS = [
+  { id:1, name:"やさしい",   pairs:2, cols:2, emoji:"🐣", bg:"var(--green)", shadow:"#38a754" },
+  { id:2, name:"ふつう",     pairs:4, cols:4, emoji:"🐰", bg:"var(--blue)",  shadow:"#2f8fd6" },
+  { id:3, name:"むずかしい", pairs:6, cols:4, emoji:"🦊", bg:"var(--coral)", shadow:"var(--coral-d)" }
+];
+
+const state = {
+  level: LEVELS[0],// えらんだ レベル
+  firstCard: null, // さいしょに めくった カード
+  lockBoard: false,// はんてい ちゅう（タップ うけつけ なし）
+  foundPairs: 0,   // みつけた ペア
+  totalPairs: 0,   // ぜんぶの ペア
+  sound: true,
+  earned: []       // ゲットした シール
+};
+
+const $ = id => document.getElementById(id);
+
+/* クリアした レベルを 端末に おぼえておく（⭐ ひょうじ よう）*/
+function getCleared(){ try{ return JSON.parse(localStorage.getItem("od-cleared")||"[]"); }catch(e){ return []; } }
+function markCleared(id){ const c=getCleared(); if(!c.includes(id)){ c.push(id); try{ localStorage.setItem("od-cleared", JSON.stringify(c)); }catch(e){} } }
+
+/* ---------- おと（WebAudio：iOSでも たしかに なる）---------- */
+let actx = null;
+function audio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+function beep(freqs, dur=0.12, type="sine", gain=0.18){
+  if(!state.sound) return;
+  const a = audio(); if(!a) return;
+  let t = a.currentTime;
+  freqs.forEach((f,i)=>{
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = f;
+    o.connect(g); g.connect(a.destination);
+    const st = t + i*dur;
+    g.gain.setValueAtTime(0, st);
+    g.gain.linearRampToValueAtTime(gain, st+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, st+dur);
+    o.start(st); o.stop(st+dur);
+  });
+}
+const sndFlip    = ()=> beep([520], 0.09, "sine", 0.12);
+const sndCorrect = ()=> beep([523,659,784,1047], 0.13, "triangle", 0.2);
+const sndWrong   = ()=> beep([330,247], 0.16, "sine", 0.16);
+const sndPop     = ()=> beep([880,1175], 0.12, "triangle", 0.18);
+
+/* よみあげ（あれば。なくても ゲームは すすむ） */
+function say(text){
+  if(!state.sound || !("speechSynthesis" in window)) return;
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP"; u.rate = 0.95; u.pitch = 1.25;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- デッキ（カードの やま）を つくる ---------- */
+function buildDeck(pairs){
+  // えもじを かさならないように pairs こ えらぶ
+  const pool = [...EMOJI_POOL];
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+  const picked = pool.slice(0, pairs);
+  // 2まいずつ ふくせい して シャッフル（Fisher-Yates）
+  const deck = picked.concat(picked);
+  for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
+  return deck;
+}
+
+/* ---------- ばんめんを えがく ---------- */
+function renderBoard(){
+  const board = $("board");
+  board.innerHTML = "";
+  board.style.gridTemplateColumns = `repeat(${state.level.cols}, 1fr)`;
+  const deck = buildDeck(state.level.pairs);
+  deck.forEach((emoji, i)=>{
+    const card = document.createElement("div");
+    card.className = "mcard";
+    card.dataset.emoji = emoji;
+    card.style.animationDelay = (i*0.05)+"s";
+    card.innerHTML =
+      '<div class="inner">' +
+        '<div class="face back">?</div>' +
+        '<div class="face front">' + emoji + '</div>' +
+      '</div>';
+    card.addEventListener("click", ()=> flipCard(card));
+    board.appendChild(card);
+  });
+  setTimeout(sndPop, 150);
+}
+
+/* ---------- カードを めくる ---------- */
+function flipCard(card){
+  if(state.lockBoard) return;
+  if(card.classList.contains("flipped") || card.classList.contains("matched")) return;
+
+  card.classList.add("flipped");
+  sndFlip();
+  say(emojiName(card.dataset.emoji));
+
+  if(!state.firstCard){
+    state.firstCard = card;        // 1まいめ
+    return;
+  }
+  // 2まいめ → はんてい
+  state.lockBoard = true;
+  const a = state.firstCard, b = card;
+  if(a.dataset.emoji === b.dataset.emoji){
+    // あたり
+    setTimeout(()=>{
+      a.classList.add("matched"); b.classList.add("matched");
+      a.classList.add("locked");  b.classList.add("locked");
+      state.foundPairs++;
+      sndCorrect();
+      flash(pickWord());
+      confetti(12);
+      updateHUD();
+      resetTurn();
+      if(state.foundPairs >= state.totalPairs){
+        setTimeout(showReward, 900);
+      }
+    }, 350);
+  }else{
+    // はずれ → うらへ もどす
+    setTimeout(()=>{
+      sndWrong();
+      a.classList.remove("flipped"); b.classList.remove("flipped");
+      resetTurn();
+    }, 850);
+  }
+}
+
+function resetTurn(){
+  state.firstCard = null;
+  state.lockBoard = false;
+}
+
+function pickWord(){
+  const words = ["ぴったり！","せいかい！","やったー！","すごい！","おなじ！"];
+  return words[Math.floor(Math.random()*words.length)];
+}
+
+/* えもじ → よみ（よみあげ よう。なければ そのまま）*/
+function emojiName(e){
+  const names = {
+    "🐰":"うさぎ","🐱":"ねこ","🐶":"いぬ","🐻":"くま","🐸":"かえる","🦊":"きつね","🐧":"ぺんぎん","🐤":"ひよこ",
+    "🍎":"りんご","🍓":"いちご","🍌":"ばなな","🍰":"けーき","🍭":"あめ",
+    "🚗":"くるま","🚌":"ばす","🚂":"でんしゃ","🚀":"ろけっと",
+    "🌸":"はな","🌟":"ほし","🌈":"にじ","🍀":"くろーばー"
+  };
+  return names[e] || "";
+}
+
+/* ---------- ひょうじ こうしん ---------- */
+function updateHUD(){
+  $("score").textContent = "⭐ " + state.foundPairs;
+  $("bar").style.width = (state.foundPairs / state.totalPairs * 100) + "%";
+}
+
+function flash(word){
+  $("flashWord").textContent = word;
+  const f = $("flash"); f.classList.add("show");
+  setTimeout(()=> f.classList.remove("show"), 1100);
+}
+
+function confetti(count=26){
+  const colors = ["#ff6b6b","#ffd93d","#4dabf7","#51c96f","#b07be0"];
+  for(let i=0;i<count;i++){
+    const p = document.createElement("div");
+    p.className = "confetti";
+    p.style.left = Math.random()*100 + "vw";
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animation = `fall ${0.9+Math.random()*0.8}s linear forwards`;
+    p.style.animationDelay = (Math.random()*0.2)+"s";
+    document.body.appendChild(p);
+    setTimeout(()=> p.remove(), 2000);
+  }
+}
+
+/* ---------- ごほうび ---------- */
+function showReward(){
+  markCleared(state.level.id);
+  const sticker = STICKERS[Math.floor(Math.random()*STICKERS.length)];
+  state.earned.push(sticker);
+  $("rewardMark").textContent = sticker;
+  $("rewardSub").textContent = "「" + state.level.name + "」を クリア！「" + sticker + "」シールを ゲット！";
+  const box = $("stickers");
+  box.innerHTML = "";
+  state.earned.forEach((s,i)=>{
+    const sp = document.createElement("span");
+    sp.textContent = s; sp.style.animationDelay = (i*0.06)+"s";
+    box.appendChild(sp);
+  });
+
+  // ボタン: つぎの レベル（あれば）／ もういちど ／ レベルを えらぶ
+  const btns = $("rewardBtns");
+  btns.innerHTML = "";
+  const next = LEVELS.find(l => l.id === state.level.id + 1);
+  if(next){
+    const nb = document.createElement("button");
+    nb.className = "start-btn";
+    nb.textContent = "つぎの レベル ▶";
+    nb.addEventListener("click", ()=> startGame(next));
+    btns.appendChild(nb);
+  }
+  const ab = document.createElement("button");
+  ab.className = "start-btn alt-btn";
+  ab.textContent = "もういちど";
+  ab.addEventListener("click", ()=> startGame(state.level));
+  btns.appendChild(ab);
+  const cb = document.createElement("button");
+  cb.className = "start-btn alt-btn";
+  cb.textContent = "レベルを えらぶ";
+  cb.addEventListener("click", goHome);
+  btns.appendChild(cb);
+
+  $("game").style.display = "none";
+  $("rewardScreen").classList.remove("hide");
+  sndCorrect();
+  confetti();
+  say(next ? "クリア。つぎも やってみよう" : "ぜんぶ クリア。やったね");
+}
+
+/* ---------- スタート／レベルえらび ---------- */
+function startGame(level){
+  state.level = level || state.level;
+  audio(); // iOS：ユーザー操作の なかで おとを ゆうこうに する
+  state.firstCard = null;
+  state.lockBoard = false;
+  state.foundPairs = 0;
+  state.totalPairs = state.level.pairs;
+  $("startScreen").classList.add("hide");
+  $("rewardScreen").classList.add("hide");
+  $("game").style.display = "flex";
+  updateHUD();
+  renderBoard();
+}
+
+/* レベルえらび画面を つくる（クリア済みには ⭐ を つける）*/
+function renderLevelSelect(){
+  const cleared = getCleared();
+  const wrap = $("levelButtons");
+  wrap.innerHTML = "";
+  LEVELS.forEach(lv=>{
+    const b = document.createElement("button");
+    b.className = "level-btn";
+    b.style.background = lv.bg;
+    b.style.boxShadow = "0 8px 0 " + lv.shadow + ", 0 16px 22px -12px rgba(0,0,0,.4)";
+    b.innerHTML =
+      (cleared.includes(lv.id) ? '<span class="lv-clear">⭐</span>' : '') +
+      '<span class="lv-emoji">' + lv.emoji + '</span>' +
+      '<span class="lv-name">' + lv.name + '</span>' +
+      '<span class="lv-range">' + lv.pairs + 'ペア</span>';
+    b.addEventListener("click", ()=> startGame(lv));
+    wrap.appendChild(b);
+  });
+}
+
+function goHome(){
+  $("game").style.display = "none";
+  $("rewardScreen").classList.add("hide");
+  $("startScreen").classList.remove("hide");
+  renderLevelSelect();
+}
+
+/* ---------- イベント ---------- */
+$("homeBtn").addEventListener("click", goHome);
+$("soundToggle").addEventListener("click", e=>{
+  state.sound = !state.sound;
+  e.currentTarget.setAttribute("aria-pressed", state.sound);
+  e.currentTarget.textContent = state.sound ? "🔊 おと あり" : "🔇 おと なし";
+  if(state.sound){ audio(); sndPop(); }
+});
+renderLevelSelect(); // さいしょの レベルえらびを ひょうじ
+</script>
+</body>
+</html>
